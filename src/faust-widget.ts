@@ -97,6 +97,9 @@ template.innerHTML = `
 `
 
 export default class FaustWidget extends HTMLElement {
+    faustNode: IFaustMonoWebAudioNode | IFaustPolyWebAudioNode | undefined
+    faustUI: FaustUI | undefined
+
     constructor() {
         super()
     }
@@ -117,7 +120,7 @@ export default class FaustWidget extends HTMLElement {
         let input: MediaStreamAudioSourceNode | undefined
         let faustUI: FaustUI
         let generator: FaustMonoDspGenerator | FaustPolyDspGenerator
-        let sourceNode: AudioBufferSourceNode = undefined;
+        let sourceNode: AudioBufferSourceNode | undefined;
 
         const setup = async () => {
             await faustPromise
@@ -137,6 +140,8 @@ export default class FaustWidget extends HTMLElement {
             faustUIRoot.style.width = faustUI.minWidth * 1.25 + "px";
             faustUIRoot.style.height = faustUI.minHeight * 1.25 + "px";
             faustUI.resize();
+
+            this.faustUI = faustUI
         }
 
         const start = async () => {
@@ -178,6 +183,8 @@ export default class FaustWidget extends HTMLElement {
 
             node.connect(audioCtx.destination)
             powerButton.style.color = "#ffa500"
+
+            this.faustNode = node
         }
 
         const stop = () => {
@@ -220,7 +227,7 @@ export default class FaustWidget extends HTMLElement {
                     try {
                         // Extract the base URL (excluding the script filename)
                         const scriptTag = document.querySelector('script[src$="faust-web-component.js"]');
-                        const scriptSrc = scriptTag.src;
+                        const scriptSrc = scriptTag?.src;
                         const baseUrl = scriptSrc.substring(0, scriptSrc.lastIndexOf('/') + 1);
                         // Load the file
                         let file = await fetch(baseUrl + '02-XYLO1.mp3');

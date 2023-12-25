@@ -1,5 +1,5 @@
 import { icon } from "@fortawesome/fontawesome-svg-core"
-import { FaustMonoDspGenerator, FaustPolyDspGenerator, IFaustMonoWebAudioNode } from "@grame/faustwasm"
+import { FaustMonoDspGenerator, FaustPolyDspGenerator, IFaustMonoWebAudioNode, IFaustPolyWebAudioNode } from "@grame/faustwasm"
 import { FaustUI } from "@shren/faust-ui"
 import faustCSS from "@shren/faust-ui/dist/esm/index.css?inline"
 import Split from "split.js"
@@ -7,6 +7,7 @@ import { faustPromise, audioCtx, compiler, svgDiagrams, default_generator, get_m
 import { createEditor, setError, clearError } from "./editor"
 import { Scope } from "./scope"
 import faustSvg from "./faustText.svg"
+import { EditorView } from "codemirror"
 
 const template = document.createElement("template")
 template.innerHTML = `
@@ -213,6 +214,10 @@ template.innerHTML = `
 `
 
 export default class FaustEditor extends HTMLElement {
+    editorView: EditorView | undefined
+    faustNode: IFaustMonoWebAudioNode | IFaustPolyWebAudioNode | undefined
+    faustUI: FaustUI | undefined
+
     constructor() {
         super()
     }
@@ -260,14 +265,14 @@ export default class FaustEditor extends HTMLElement {
             sidebarOpen = true
         }
 
-        let node: IFaustMonoWebAudioNode | undefined
+        let node: IFaustMonoWebAudioNode | IFaustPolyWebAudioNode | undefined
         let input: MediaStreamAudioSourceNode | undefined
         let analyser: AnalyserNode | undefined
         let scope: Scope | undefined
         let spectrum: Scope | undefined
         let gmidi = false
         let gnvoices = -1
-        let sourceNode: AudioBufferSourceNode = undefined;
+        let sourceNode: AudioBufferSourceNode | undefined;
 
         runButton.onclick = async () => {
             if (audioCtx.state === "suspended") {
@@ -357,6 +362,10 @@ export default class FaustEditor extends HTMLElement {
             editorEl.style.height = `${Math.max(125, faustUI.minHeight)}px`;
             faustUIRoot.style.width = faustUI.minWidth * 1.25 + "px"
             faustUIRoot.style.height = faustUI.minHeight * 1.25 + "px"
+
+            this.faustUI = faustUI
+            this.faustNode = node
+            this.editorView = editor
         }
 
         const setSVG = (svgString: string) => {
@@ -451,7 +460,7 @@ export default class FaustEditor extends HTMLElement {
                     try {
                         // Extract the base URL (excluding the script filename)
                         const scriptTag = document.querySelector('script[src$="faust-web-component.js"]');
-                        const scriptSrc = scriptTag.src;
+                        const scriptSrc = scriptTag?.src;
                         const baseUrl = scriptSrc.substring(0, scriptSrc.lastIndexOf('/') + 1);
                         // Load the file
                         let file = await fetch(baseUrl + '02-XYLO1.mp3');
